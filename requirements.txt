@@ -1,0 +1,10 @@
+gspread
+oauth2client
+langchain
+openai
+newspaper3k
+python-dotenv
+pandas
+lxml_html_clean
+openpyxl
+langchain_community

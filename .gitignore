@@ -1,0 +1,20 @@
+# Virtual Environment
+/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS folder attributes
+.DS_Store
+
+# Environment variables
+.env
+
+# Excel temp/lock files
+~$*.xls*
+
+# Ignore large/intermediate data
+/data/scraped_articles.json
+/data/summarized_articles.json
