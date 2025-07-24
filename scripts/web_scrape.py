@@ -5,14 +5,9 @@ import json
 import os
 from newspaper import Article
 
-# Load URLs from Excel
 DATA_PATH = "./data/urls.xlsx"
-df = pd.read_excel(DATA_PATH)
-urls = df["URL"].dropna().tolist()
-
-# Choose keyword for filtering
-keyword = "Warriors"
-output_articles = []
+SCRAPED_PATH = "./data/scraped_articles.json"
+KEYWORD = "Warriors"
 
 # Mapping for article URL patterns
 ARTICLE_PATTERNS = {
@@ -49,24 +44,40 @@ def find_articles_with_keyword(base_url, keyword):
                         art.download()
                         art.parse()
                         article_text = art.text
+                        article_title = art.title
                     except Exception as e:
                         print(f"Failed to get article text: {url} ({e})")
                         article_text = ""
+                        article_title = text
                     articles.append({
                         "url": url,
-                        "title": text,
-                        "text": article_text[:15000]  # Truncate if needed for LLMs
+                        "title": article_title,
+                        "text": article_text[:20000]  # Truncate if needed for LLMs
                     })
     except Exception as e:
         print(f"Error processing {base_url}: {e}")
     return articles
 
-if __name__ == "__main__":
+def scrape_articles(keyword=KEYWORD):
+    print("Scraping articles...")
+    df = pd.read_excel(DATA_PATH)
+    urls = df["URL"].dropna().tolist()
+    output_articles = []
+    seen_urls = set()
     for url in urls:
         print(f"Scanning {url}")
         found_articles = find_articles_with_keyword(url, keyword)
-        output_articles.extend(found_articles)
-    SCRAPED_PATH = "./data/scraped_articles.json"
+        for art in found_articles:
+            # Remove duplicates by URL
+            if art["url"] not in seen_urls:
+                output_articles.append(art)
+                seen_urls.add(art["url"])
+
     with open(SCRAPED_PATH, "w", encoding="utf-8") as f:
         json.dump(output_articles, f, ensure_ascii=False, indent=2)
     print(f"Saved {len(output_articles)} articles mentioning '{keyword}'")
+
+    return output_articles
+
+if __name__ == "__main__":
+    scrape_articles()
