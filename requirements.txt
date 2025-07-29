@@ -8,3 +8,6 @@ pandas
 lxml_html_clean
 openpyxl
 langchain_community
+langchain-openai 
+pydantic
+langgraph

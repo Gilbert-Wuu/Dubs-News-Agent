@@ -1,6 +1,10 @@
 from web_scrape import scrape_articles
 from summarization import summarize_articles
 from notify_email import send_email
+import datetime
+
+print(f"\n--- Pipeline started at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+
 
 def run():
     articles = scrape_articles()
