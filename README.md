@@ -70,3 +70,37 @@ crontab -e
 - 📝 Add/modify news sources in `data/urls.xlsx`.
 - 📬 Change summary prompt in `scripts/summarization.py` for different tone/length
 - 🤝 Agentic Workflow: Future versions will include a smart, multi-step agent pipeline.
+
+---
+
+## Project Progress & Current Status
+
+### Method Tried
+**1. LangChain Agent (OPENAI_FUNCTIONS)**
+   - **Approach**: \
+     Used `AgentType.OPENAI_FUNCTIONS` agent to enable tool-calling with OpenAI models.
+   - **Result**: \
+     The agent could correctly identify and call each tool (scrape, summarize, notify).
+   - **Bottleneck:** \
+     _**Could not chain outputs**_ — the agent failed to pass the output of one tool (e.g., scraped articles) as input to the next (summarization), instead invoking downstream tools with empty dictionary.
+
+**2. LangChain ReAct Agent (ZERO_SHOT_REACT_DESCRIPTION / create_react_agent)**
+   - **Approach**: \
+     Tried both the prebuilt `AgentType.ZERO_SHOT_REACT_DESCRIPTION` and custom `create_react_agent` with ReAct-style prompting for more flexible tool routing and better reasoning.
+   - **Result**: \
+     Could reason through tool usage, but does not support multi-field/multi-input tools (e.g., cannot handle tools that require a dict or complex input schema).
+   - **Limitation:** \
+     ZeroShot/ReAct agents expect simple (single string) inputs and cannot process the structured data needed to chain tool outputs.
+
+### Current Bottleneck
+- Neither `OPENAI_FUNCTIONS` nor `ReAct agents` fully support passing structured (multi-field) outputs from one tool to another.
+- As a result, complex workflows (such as chaining scraping → summarization → notification, with rich data between steps) are not achievable with these agent types.
+  
+---
+
+## Next Steps: Moving to LangGraph
+- **Why LangGraph?** \
+  LangGraph’s `StateGraph` enables explicit control over state passing between workflow nodes.
+- **Future plan:** \
+  Refactor the agent pipeline using LangGraph, where each node represents a tool and receives the full state—including outputs from previous steps. This should allow seamless chaining of outputs and more sophisticated workflows.
+
