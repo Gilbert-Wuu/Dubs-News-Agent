@@ -1,106 +1,93 @@
-# <img width="32" height="32" alt="image" src="https://github.com/user-attachments/assets/17c44201-a314-4eb1-9f7b-6238c70c1a4c" /> Dubs News Agent 
+# <img width="32" height="32" alt="image" src="https://github.com/user-attachments/assets/17c44201-a314-4eb1-9f7b-6238c70c1a4c" /> Dubs News Agent
 
-
-**Dubs News Agent** is an automated pipeline that scrapes, summarizes, and delivers the latest Golden State Warriors news straight to your inbox. Built for Warriors fans and techies who love practical AI and workflow automation.
+**Dubs News Agent** is an automated pipeline that scrapes, summarizes, and delivers the latest Golden State Warriors news to your WhatsApp every morning. Built with LangGraph, LangChain, and GitHub Actions.
 
 ---
 
 ## Features
 
-- 🔗 **Multi-site Scraping:** Gathers news from top NBA news sources (ESPN, Yahoo, NBA.com, Bleacher Report, etc.)
-- 🤖 **AI Summarization:** Uses OpenAI GPT to generate brief, readable news summaries.
-- 📧 **Email notification** Keep yourself updated with dubs nations daily digest
-- 📁 **Modular Code:** Function-based Python scripts for easy extension and reuse.
-- 🕒 **Ready for Automation:** Fully automated with cron job scheduling.
+- 🔗 **Multi-source Scraping:** Gathers news from 11 RSS feeds (ESPN, Yahoo Sports, CBS Sports, HoopsHype, Bleacher Report, etc.) + NBA.com via Playwright
+- 🤖 **AI Summarization:** Uses OpenAI GPT to generate concise, readable summaries focused on the Warriors
+- 📱 **WhatsApp Notification:** Delivers your daily digest directly to WhatsApp via CallMeBot
+- 🔀 **LangGraph Pipeline:** Stateful `StateGraph` with conditional routing — stops gracefully if no articles or summaries are found
+- ⏰ **Fully Automated:** Runs every day at 8 AM EDT via GitHub Actions — no server or local machine required
 
 ---
 
+## Setup
 
-## Usage
-
-### 1. **Clone the Repo**
+### 1. Clone the Repo
 ```bash
 git clone https://github.com/YOUR_USERNAME/dubs-news-agent.git
 cd dubs-news-agent
 ```
 
-### 2. **Setup you Environment**
+### 2. Create a Virtual Environment
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+playwright install chromium
 ```
 
-### 3. **Configure your Secrets**
-- Create a `.env` file in the root directory:
-```bash
-OPENAI_API_KEY=sk-xxx-your-openai-key
-EMAIL_ADDRESS=yourgmail@gmail.com
-EMAIL_PASSWORD=your_gmail_app_password
-TO_EMAIL=destination@email.com
+### 3. Get a CallMeBot API Key (one-time)
+1. Add `+34 694 26 48 06` on WhatsApp
+2. Send it: `I allow callmebot to send me messages`
+3. You'll receive your personal API key via WhatsApp
+
+### 4. Configure Environment Variables
+Create a `.env` file in the repo root:
+```
+OPENAI_API_KEY=sk-...
+CALLMEBOT_PHONE=+1XXXXXXXXXX
+CALLMEBOT_APIKEY=your_callmebot_api_key
 ```
 
-### 4. **Prepare your Sources**
-- Add or update news site URLs in `data/urls.xlsx`.
-
-### 5. **Run the workflow manually**
+### 5. Run Manually
 ```bash
 python scripts/run_pipeline.py
 ```
 
 ---
 
-## Automation: Scheduling with Cron
-To automate your news digest every day at 10:00 PM:
-1. Open your crontab:
-```bash
-crontab -e
+## Automation: GitHub Actions
+
+The pipeline runs automatically every day at **8:00 AM EDT** via `.github/workflows/daily_news.yml`.
+
+**Setup:**
+1. Go to your repo → **Settings** → **Secrets and variables** → **Actions**
+2. Add three repository secrets:
+
+| Secret | Value |
+|---|---|
+| `OPENAI_API_KEY` | Your OpenAI API key |
+| `CALLMEBOT_PHONE` | Your WhatsApp number with country code (e.g. `+12223334444`) |
+| `CALLMEBOT_APIKEY` | Your CallMeBot API key |
+
+3. Push your code — the workflow will trigger automatically on schedule, or you can run it manually from the **Actions** tab.
+
+---
+
+## Architecture
+
+The pipeline is a LangGraph `StateGraph` with three nodes and conditional routing:
+
+```
+scrape_node → summarize_node → notify_node
+     ↓ (no articles)    ↓ (no summaries)
+    END                END
 ```
 
-2. Add the following line
-```bash
-0 22 * * * cd /full/path/to/dubs-news-agent && /full/path/to/dubs-news-agent/.venv/bin/python scripts/run_pipeline.py >> pipeline.log 2>&1
-```
-
-- All output (including errors) will be logged to `pipeline.log` in your project directory.
+**Data flow:**
+1. `scrape_node` — scans RSS feeds + NBA.com (Playwright) for articles matching `"Warriors"` → `data/scraped_articles.json`
+2. `summarize_node` — runs each article through an LLM prompt chain → `data/summarized_articles.json`
+3. `notify_node` — formats and sends a WhatsApp message via CallMeBot
 
 ---
 
 ## Customization
-- 📝 Add/modify news sources in `data/urls.xlsx`.
-- 📬 Change summary prompt in `scripts/summarization.py` for different tone/length
-- 🤝 Agentic Workflow: Future versions will include a smart, multi-step agent pipeline.
 
----
-
-## Project Progress & Current Status
-
-### Method Tried
-**1. LangChain Agent (OPENAI_FUNCTIONS)**
-   - **Approach**: \
-     Used `AgentType.OPENAI_FUNCTIONS` agent to enable tool-calling with OpenAI models.
-   - **Result**: \
-     The agent could correctly identify and call each tool (scrape, summarize, notify).
-   - **Bottleneck:** \
-     _**Could not chain outputs**_ — the agent failed to pass the output of one tool (e.g., scraped articles) as input to the next (summarization), instead invoking downstream tools with empty dictionary.
-
-**2. LangChain ReAct Agent (ZERO_SHOT_REACT_DESCRIPTION / create_react_agent)**
-   - **Approach**: \
-     Tried both the prebuilt `AgentType.ZERO_SHOT_REACT_DESCRIPTION` and custom `create_react_agent` with ReAct-style prompting for more flexible tool routing and better reasoning.
-   - **Result**: \
-     Could reason through tool usage, but does not support multi-field/multi-input tools (e.g., cannot handle tools that require a dict or complex input schema).
-   - **Limitation:** \
-     ZeroShot/ReAct agents expect simple (single string) inputs and cannot process the structured data needed to chain tool outputs.
-
-### Current Bottleneck
-- Neither `OPENAI_FUNCTIONS` nor `ReAct agents` fully support passing structured (multi-field) outputs from one tool to another.
-- As a result, complex workflows (such as chaining scraping → summarization → notification, with rich data between steps) are not achievable with these agent types.
-  
----
-
-## Next Steps: Moving to LangGraph
-- **Why LangGraph?** \
-  LangGraph’s `StateGraph` enables explicit control over state passing between workflow nodes.
-- **Future plan:** \
-  Refactor the agent pipeline using LangGraph, where each node represents a tool and receives the full state—including outputs from previous steps. This should allow seamless chaining of outputs and more sophisticated workflows.
-
+- 📡 **Add RSS sources:** Edit `RSS_SOURCES` in `scripts/web_scrape.py`
+- 📝 **Change summary style:** Edit the `PromptTemplate` in `scripts/summarization.py`
+- ⏰ **Change schedule:** Edit the cron expression in `.github/workflows/daily_news.yml`
+- 🔑 **Change keyword:** Edit `"Golden State Warriors"` in `scripts/run_pipeline.py`

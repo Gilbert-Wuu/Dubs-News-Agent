@@ -18,3 +18,6 @@ __pycache__/
 # Ignore large/intermediate data
 /data/scraped_articles.json
 /data/summarized_articles.json
+
+pipeline.log
+
