@@ -18,7 +18,6 @@ def send_whatsapp(message: str):
         "text": message,
         "apikey": API_KEY,
     }, timeout=15)
-    if resp.status_code == 200:
-        print("WhatsApp message sent successfully.")
-    else:
-        raise RuntimeError(f"CallMeBot API error: HTTP {resp.status_code} — {resp.text[:300]}")
+    print(f"CallMeBot response ({resp.status_code}): {resp.text[:300]}")
+    if resp.status_code != 200:
+        raise RuntimeError(f"CallMeBot API error: HTTP {resp.status_code}")
