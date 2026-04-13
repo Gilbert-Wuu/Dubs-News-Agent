@@ -13,8 +13,9 @@ CALLMEBOT_URL = "https://api.callmebot.com/whatsapp.php"
 def send_whatsapp(message: str):
     if not PHONE or not API_KEY:
         raise ValueError("CALLMEBOT_PHONE or CALLMEBOT_APIKEY is not set")
-    encoded = quote(message)
-    url = f"{CALLMEBOT_URL}?phone={PHONE}&text={encoded}&apikey={API_KEY}"
+    encoded_text = quote(message)
+    encoded_phone = quote(PHONE)
+    url = f"{CALLMEBOT_URL}?phone={encoded_phone}&text={encoded_text}&apikey={API_KEY}"
     print(f"[notify] Calling CallMeBot API for {PHONE}")
     resp = requests.get(url, timeout=15)
     if resp.status_code == 200:
