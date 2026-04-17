@@ -6,7 +6,7 @@
 
 ## Features
 
-- 🔗 **Multi-source Scraping:** Gathers news from 11 RSS feeds (ESPN, Yahoo Sports, CBS Sports, HoopsHype, Bleacher Report, etc.) + NBA.com via Playwright
+- 🔗 **Multi-source Scraping:** Gathers news from 11 RSS feeds (ESPN, Yahoo Sports, CBS Sports, HoopsHype, Bleacher Report, etc.)
 - 🤖 **AI Summarization:** Uses OpenAI GPT to generate concise, readable summaries focused on the Warriors
 - 📱 **WhatsApp Notification:** Delivers your daily digest directly to WhatsApp via CallMeBot
 - 🔀 **LangGraph Pipeline:** Stateful `StateGraph` with conditional routing — stops gracefully if no articles or summaries are found
@@ -27,7 +27,6 @@ cd dubs-news-agent
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-playwright install chromium
 ```
 
 ### 3. Get a CallMeBot API Key (one-time)
@@ -79,8 +78,8 @@ scrape_node → summarize_node → notify_node
 ```
 
 **Data flow:**
-1. `scrape_node` — scans RSS feeds + NBA.com (Playwright) for articles matching `"Warriors"` → `data/scraped_articles.json`
-2. `summarize_node` — runs each article through an LLM prompt chain → `data/summarized_articles.json`
+1. `scrape_node` — scans RSS feeds for articles matching `"Warriors"` → `data/scraped_articles.json`
+2. `summarize_node` — feeds all articles into a single LLM call to produce a 3-bullet-point digest → `data/summarized_articles.json`
 3. `notify_node` — formats and sends a WhatsApp message via CallMeBot
 
 ---
@@ -91,3 +90,11 @@ scrape_node → summarize_node → notify_node
 - 📝 **Change summary style:** Edit the `PromptTemplate` in `scripts/summarization.py`
 - ⏰ **Change schedule:** Edit the cron expression in `.github/workflows/daily_news.yml`
 - 🔑 **Change keyword:** Edit `"Golden State Warriors"` in `scripts/run_pipeline.py`
+
+---
+
+## Demo
+
+| Digest | Sources |
+|--------|---------|
+| <img src="demo/chatbot-demo1.png" width="260"/> | <img src="demo/chatbot-demo2.png" width="260"/> |
