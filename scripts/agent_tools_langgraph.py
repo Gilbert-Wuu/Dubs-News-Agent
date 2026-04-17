@@ -1,7 +1,7 @@
 from typing import TypedDict, List
 from langgraph.graph import StateGraph, END
 from web_scrape import scrape_articles
-from summarization import summarize_articles
+from summarization import create_digest
 from notify_whatsapp import send_whatsapp
 import datetime
 from dotenv import load_dotenv
@@ -12,7 +12,8 @@ load_dotenv()
 class AgentState(TypedDict):
     keyword: str
     scraped_articles: List[dict]
-    summaries: List[dict]
+    digest: str
+    article_links: List[dict]
     notification_sent: bool
 
 
@@ -34,21 +35,22 @@ def scrape_node(state: AgentState) -> dict:
 
 def summarize_node(state: AgentState) -> dict:
     articles = state["scraped_articles"]
-    print(f"\n[summarize] Summarizing {len(articles)} articles")
-    summaries = summarize_articles(articles)
-    print(f"[summarize] {len(summaries)} summaries generated")
-    return {"summaries": summaries}
+    print(f"\n[summarize] Creating digest from {len(articles)} articles")
+    result = create_digest(articles)
+    print(f"[summarize] Digest created")
+    return {"digest": result["digest"], "article_links": result["articles"]}
 
 
 def notify_node(state: AgentState) -> dict:
-    summaries = state["summaries"]
-    print(f"\n[notify] Sending WhatsApp message with {len(summaries)} summaries")
-    date_str = datetime.date.today().strftime("%b %d, %Y")
-    lines = [f"Warriors News — {date_str}\n"]
-    for i, a in enumerate(summaries, 1):
-        lines.append(f"{i}. {a['title']}\n{a['summary']}\n{a['url']}")
-    message = "\n\n".join(lines)
-    send_whatsapp(message)
+    digest = state["digest"]
+    article_links = state["article_links"]
+    print(f"\n[notify] Sending WhatsApp digest with {len(article_links)} source links")
+    date_str = datetime.date.today().strftime("%b %d")
+    send_whatsapp(f"\U0001f3c0 Warriors Daily — {date_str}\n\n{digest}")
+    sources_lines = ["\U0001f4ce Sources:"]
+    for a in article_links[:3]:
+        sources_lines.append(f"- {a['title']}: {a['url']}")
+    send_whatsapp("\n".join(sources_lines))
     return {"notification_sent": True}
 
 
@@ -62,9 +64,9 @@ def route_after_scrape(state: AgentState) -> str:
 
 
 def route_after_summarize(state: AgentState) -> str:
-    if state.get("summaries"):
+    if state.get("digest"):
         return "notify"
-    print("[router] No summaries generated — stopping pipeline")
+    print("[router] No digest generated — stopping pipeline")
     return END
 
 
@@ -89,5 +91,5 @@ if __name__ == "__main__":
     result = graph.invoke({"keyword": "Golden State Warriors"})
     print("\n--- Pipeline Complete ---")
     print(f"Articles scraped  : {len(result.get('scraped_articles', []))}")
-    print(f"Summaries created : {len(result.get('summaries', []))}")
-    print(f"Email sent        : {result.get('notification_sent', False)}")
+    print(f"Digest created    : {bool(result.get('digest'))}")
+    print(f"Notification sent : {result.get('notification_sent', False)}")

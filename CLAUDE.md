@@ -48,16 +48,16 @@ The pipeline is a LangGraph `StateGraph` defined in `scripts/agent_tools_langgra
 
 **Data flow:**
 1. `scrape_node` — scans RSS feeds + NBA.com (via Playwright) for articles matching keyword `"Warriors"` → `data/scraped_articles.json`
-2. `summarize_node` — sends each article through an LLM prompt chain → `data/summarized_articles.json`
-3. `notify_node` — sends summaries via WhatsApp (CallMeBot API)
+2. `summarize_node` — feeds all articles into a single LLM call to produce a 3-bullet-point morning digest → `data/summarized_articles.json`
+3. `notify_node` — sends two WhatsApp messages: (1) digest bullets, (2) top 3 source links
 
-Conditional routing: if scrape returns no articles, pipeline stops before summarizing; if summarize returns no summaries, pipeline stops before notifying.
+Conditional routing: if scrape returns no articles, pipeline stops before summarizing; if summarize returns no digest, pipeline stops before notifying.
 
 ## Key Files
 
 - `scripts/agent_tools_langgraph.py` — LangGraph `StateGraph` with scrape/summarize/notify nodes and conditional routing
 - `scripts/run_pipeline.py` — entrypoint; invokes the graph
 - `scripts/web_scrape.py` — `scrape_articles()`: RSS via `feedparser`, JS-rendered via Playwright
-- `scripts/summarization.py` — `summarize_articles()`: LangChain prompt chain; edit the `PromptTemplate` to change summary tone/length
+- `scripts/summarization.py` — `create_digest()`: single LLM call across all articles; produces 3 bullet points deduplicating overlapping stories
 - `scripts/notify_whatsapp.py` — `send_whatsapp()`: sends message via CallMeBot WhatsApp API
 - `.github/workflows/daily_news.yml` — GitHub Actions cron job (8 AM PST daily)
