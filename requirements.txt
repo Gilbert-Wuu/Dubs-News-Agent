@@ -3,7 +3,6 @@ langgraph
 openai
 newspaper3k
 feedparser
-playwright
 requests
 python-dotenv
 lxml_html_clean
